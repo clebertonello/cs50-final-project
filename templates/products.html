@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Products
+{% endblock %}
+
+{% block main %}
+    <form action="/products" method="POST">
+
+        <div class="mb-3">
+            <select name="category" class="form-select" id="category">
+                <option disabled selected value="">Category</option>
+                {% for category in category_list %}
+                    <option value="{{ category['descricao'] }}">{{ category['descricao'] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <input autocomplete="off" autofocus class="form-control" name="id" placeholder="ID" type="number">
+        </div>
+        <div class="mb-3">
+            <input autocomplete="off" autofocus class="form-control" name="product_name" placeholder="Product Name" type="text">
+        </div>
+        <div class="mb-3">
+            <select name="subcategory" class="form-select" id="subcat">
+                <option disabled selected value="">Subcategory</option>
+                {% for subcategory in result %}
+                    <option value="{{ subcategory }}">{{ subcategory }}</option>
+                {% endfor %}
+            </select>
+        <div>
+            <p id="teste"></p>
+            <p id="teste2"></p>
+            <p id="teste3"></p>
+        </div>
+                       
+            <!--<input autocomplete="off" autofocus class="form-control" name="subcategory" placeholder="SubCategory" type="text">-->
+        </div>
+        <button class="btn btn-primary" type="submit">Add Product</button>
+    </form>
+
+    <script>
+        /* source= https://stackoverflow.com/questions/1801499/how-to-change-options-of-select-with-jquery */
+        $(function() {
+            $('#category').bind('change', function() {
+            $.getJSON($SCRIPT_ROOT + '/fetchsubcat', {
+                query: $('select[name="category"]').val(),
+            }, 
+                function(data) {
+
+                    var newOptions = data.result;
+
+                    var $el = $("#subcat");
+                    $el.empty(); // remove old options
+                    $.each(newOptions, function(key,value) {
+                    $el.append($("<option></option>")
+                        .attr("value", value).text(value));
+                    });
+            });
+            return false;
+            });
+        });
+    </script>
+{% endblock %}
