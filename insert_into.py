@@ -1,4 +1,6 @@
 import sqlite3
+from datetime import date
+import json
 
 db = sqlite3.connect("mercado.db")
 cur = db.cursor()
@@ -33,19 +35,32 @@ subcategorias = [
 ]
 
 fornecedores = [
-    (1, 'BigLar', 1),
-    (2, 'Comper', 1),
-    (3, 'Fort', 1),
-    (4, 'Atacadão', 1)
+    (1, 'BIGLAR'),
+    (2, 'COMPER'),
+    (3, 'FORT'),
+    (4, 'ATACADÃO'),
+    (5, 'STUDIO STEEL WORKOUT')
 ]
+
+produto_categoria = [
+    (7898964981113,100),
+    (789864981021,100),
+    (7898908804287,100),
+    (7896002360326,106)
+    ]
 
 #cur.executemany('INSERT INTO categoria (descricao, parent_id) VALUES (?, ?)', categorias)
 
 #cur.executemany('INSERT INTO categoria (id, descricao, parent_id) VALUES (?, ?, ?)', subcategorias)
+""" 
+cur.executemany('INSERT INTO fornecedor (id, fornecedor_nome) VALUES (?, ?)', fornecedores)
 
-#cur.executemany('INSERT INTO fornecedor (id, fornecedor_nome, parent_id) VALUES (?, ?, ?)', fornecedores)
+db.commit() """
 
-#db.commit()
+
+cur.executemany('INSERT INTO produto_categoria (id_produto, id_categoria) VALUES (?, ?)', produto_categoria)
+
+db.commit()
 
 #category_list = cur.execute("SELECT descricao FROM categoria WHERE parent_id IS NULL").fetchall()
 #print(category_list[0]['descricao'])
@@ -54,14 +69,29 @@ fornecedores = [
 parent_id = cur.execute("SELECT id FROM categoria WHERE descricao = ?", (query,)).fetchone()[0]
 print(parent_id) """
 
-parent_id = 1
+""" parent_id = 1
 sublist = []
 data = cur.execute("SELECT descricao FROM categoria WHERE parent_id = ?", (parent_id,)).fetchall()
 
 for i in data:
-    sublist.append(list(i))
+    sublist.append(list(i)) """
 
-print(sublist)
+""" 
+cur.execute("INSERT INTO compras (id, compra_total, categoria_id, data) VALUES (?, ?, ?, ?)", (20210610001, 204, 6, date.today()))
+db.commit() """
+
+""" purchases = cur.execute(
+    "SELECT compras.id, compras.compra_total, categoria.descricao, compras.data FROM compras INNER JOIN categoria ON compras.categoria_id=categoria.id"
+    ).fetchone() """
+"""
+var = cur.execute("SELECT MAX (id) FROM categoria WHERE parent_id = 6 GROUP BY parent_id").fetchone()
+print(var[0])
+
+result = [dict(row) for row in shopping_list]
+json.dumps(result)
+print(result) """
+
+
 
 
 

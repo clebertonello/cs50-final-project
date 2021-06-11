@@ -46,6 +46,15 @@ CREATE TABLE compras (
     id INTEGER PRIMARY KEY NOT NULL,
     compra_total DECIMAL(15,2),
     categoria_id INTEGER,
-    data DATETIME,
+    data DATE,
     FOREIGN KEY (categoria_id) REFERENCES categoria(id)
 );
+
+CREATE TABLE produto_categoria (
+    id_produto INTEGER,
+    id_categoria INTEGER,
+    PRIMARY KEY(id_produto, id_categoria)
+    FOREIGN KEY (id_produto) REFERENCES produto(id),
+    FOREIGN KEY (id_categoria) REFERENCES categoria(id)
+);
+

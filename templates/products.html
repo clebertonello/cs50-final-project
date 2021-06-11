@@ -8,57 +8,100 @@
     <form action="/products" method="POST">
 
         <div class="mb-3">
-            <select name="category" class="form-select" id="category">
-                <option disabled selected value="">Category</option>
-                {% for category in category_list %}
-                    <option value="{{ category['descricao'] }}">{{ category['descricao'] }}</option>
+            <h5>Select your Purchase ID</h5>
+            <select name="purchases" class="form-select" id="purchases" required>
+                <option disabled selected value="">Purchase ID</option>
+                {% for item in shopping_list %}
+                    <option value="{{ item['id'] }}">{{ item['id'] }}</option>
                 {% endfor %}
             </select>
         </div>
         <div class="mb-3">
-            <input autocomplete="off" autofocus class="form-control" name="id" placeholder="ID" type="number">
+            <input class="form-control" name="id" placeholder="ID" type="text" id=product_id required autocomplete="off">
         </div>
         <div class="mb-3">
-            <input autocomplete="off" autofocus class="form-control" name="product_name" placeholder="Product Name" type="text">
+            <input class="form-control" name="product_name" placeholder="Product Name" type="text" id=product_name required autocomplete="off">
         </div>
         <div class="mb-3">
-            <select name="subcategory" class="form-select" id="subcat">
-                <option disabled selected value="">Subcategory</option>
-                {% for subcategory in result %}
-                    <option value="{{ subcategory }}">{{ subcategory }}</option>
-                {% endfor %}
-            </select>
-        <div>
-            <p id="teste"></p>
-            <p id="teste2"></p>
-            <p id="teste3"></p>
+            <input class="form-control" name="subcategory" placeholder="Subcategory" type="text" id="subcat" required autocomplete="off">
+            <input class="form-control" name="subcategoryid" id="subcatid" type="hidden">
         </div>
-                       
-            <!--<input autocomplete="off" autofocus class="form-control" name="subcategory" placeholder="SubCategory" type="text">-->
+        <div class="mb-3">
+            <input autocomplete="off" class="form-control" name="unit_price" placeholder="Unit Price" type="number" required autocomplete="off">
+        </div>
+        <div class="mb-3">
+            <input autocomplete="off" class="form-control" name="quantity" placeholder="Quantity" type="number" required autocomplete="off">
+        </div>
+        <div class="mb-3">
+            <input class="form-control" name="supplier" placeholder="Supplier" type="text" id="supplier" required autocomplete="off">
+            <input class="form-control" name="supplierid" id="supplierid" type="hidden">
         </div>
         <button class="btn btn-primary" type="submit">Add Product</button>
     </form>
 
     <script>
+                
         /* source= https://stackoverflow.com/questions/1801499/how-to-change-options-of-select-with-jquery */
+        
         $(function() {
-            $('#category').bind('change', function() {
-            $.getJSON($SCRIPT_ROOT + '/fetchsubcat', {
-                query: $('select[name="category"]').val(),
-            }, 
-                function(data) {
-
-                    var newOptions = data.result;
-
-                    var $el = $("#subcat");
-                    $el.empty(); // remove old options
-                    $.each(newOptions, function(key,value) {
-                    $el.append($("<option></option>")
-                        .attr("value", value).text(value));
-                    });
-            });
-            return false;
+            $('#purchases').on('change', function() {
+                $.getJSON($SCRIPT_ROOT + '/fetchsubcat', {query_sub: $('select[name="purchases"]').val(),
+            }, function(data) {
+                var subcat_list = $.map(data.sublist, function(value, key) {return {label: value.descricao, value: value.id}});
+                console.log(subcat_list)
+                console.log(subcat_list.length)
+                console.log(data.parentid)
+                console.log(data.maxvalue)
+                
+                if (subcat_list.length !== 0) {
+                    $('#subcat').autocomplete({
+                        delay: 0,
+                        source: subcat_list,
+                        select: function(event, ui) {
+                            $('#subcatid').val(ui.item.value);
+                            $('#subcat').val(ui.item.label)
+                        return false;
+                        },
+                        /*source: https://stackoverflow.com/questions/27561967/jquery-autocomplete-else-if-item-is-not-selected/27562071 */
+                        change: function (event, ui) {
+                                if (ui.item === null) {
+                                    $('#subcatid').val(data.maxvalue + 1);
+                                }
+                            }
+                    })
+                }
+                else {
+                    $('#subcat').change(function() {
+                        $('#subcatid').val(data.parentid * 100)}
+                    )
+                }
+                });
             });
         });
+
+        
+        $(document).ready(function() {
+            $.getJSON($SCRIPT_ROOT + '/fetchprod',function(data) {
+                var product_list = $.map(data.productlist, function(value, key) {return {label: value.produto_nome, value: value.id}});
+                var supplier_list = $.map(data.supplierlist, function(value, key) {return {label: value.fornecedor_nome, value: value.id}});
+                $('#product_name').autocomplete({
+                    delay: 0,
+                    source: product_list,
+                    select: function(event, ui) {
+                        $('#product_id').val(ui.item.value);
+                        $('#product_name').val(ui.item.label)
+                        return false;
+                    }})
+                $('#supplier').autocomplete({
+                    delay: 0,
+                    source: supplier_list,
+                    select: function(event, ui) {
+                        $('#supplierid').val(ui.item.value);
+                        $('#supplier').val(ui.item.label)
+                        return false;
+                    }})
+            });
+        });  
+            
     </script>
 {% endblock %}

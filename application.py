@@ -8,6 +8,7 @@ from werkzeug.exceptions import default_exceptions, HTTPException, InternalServe
 from werkzeug.security import check_password_hash, generate_password_hash
 import pandas_datareader.data as wd
 from datetime import date
+import json
 
 from helpers import apology, login_required, lookup, usd
 
@@ -53,7 +54,6 @@ def index():
 
     user_id = session["user_id"]
 
-
     return render_template("index.html")
 
 # source: https://tutorial101.blogspot.com/2021/02/python-flask-jquery-ajax-live-data.html
@@ -62,79 +62,82 @@ def index():
 def products():
     """add product to database"""
 
-    category_list = cur.execute("SELECT descricao FROM categoria WHERE parent_id IS NULL").fetchall()
+    shopping_list = cur.execute("SELECT id FROM compras").fetchall()
 
     if request.method == "POST":
         user_id = session["user_id"]
-
+        purchases_id = request.form.get("purchases")
         product_id = request.form.get("id")
-        product_name = request.form.get("product_name")
-        category_name = request.form.get("subcategory")
+        product_name = request.form.get("product_name").upper()
+        category_id = cur.execute("SELECT categoria_id FROM compras WHERE id = ?", (purchases_id,)).fetchone()[0]
+        subcategory = request.form.get("subcategory").upper()
+        subcategory_id = request.form.get("subcategoryid")
+        quantity = request.form.get("quantity")
+        supplier = request.form.get("supplier").upper()
+        supplier_id = request.form.get("supplierid")
+        unit_price = request.form.get("unit_price")
 
-        category_id = cur.execute("SELECT id FROM categoria WHERE descricao = ?", (category_name,)).fetchone()[0]
+        product_check = cur.execute("SELECT id FROM produto WHERE id = ?", (product_id,)).fetchone()
+        category_check = cur.execute("SELECT id FROM categoria WHERE id = ?", (subcategory_id,)).fetchone()
 
-        cur.execute("INSERT INTO produto_categoria (id_produto, id_categoria) VALUES (?, ?)", (product_id, category_id))
-        cur.execute("INSERT INTO produto (id, produto_nome) VALUES (?, ?)", (product_id, product_name))
+        if category_check is None:
+            cur.execute(
+                "INSERT INTO categoria (id, descricao, parent_id) VALUES (?, ?, ?)", (subcategory_id, subcategory, category_id)
+                )
+
+        if product_check is None:
+            cur.execute(
+                "INSERT INTO produto_categoria (id_produto, id_categoria) VALUES (?, ?)", (product_id, subcategory_id)
+                )
+            cur.execute(
+                "INSERT INTO produto (id, produto_nome) VALUES (?, ?)", (product_id, product_name)
+                )
+        
+        if supplier_id is None:
+            cur.execute(
+                "INSERT INTO fornecedor (id, produto_nome) VALUES (?, ?)", (supplier_id, supplier)
+                )
+
+        cur.execute(
+            "INSERT INTO compra_produto (user_id, produto_id, quant, fornecedor_id, compras_id, preco_unit) VALUES (?, ?, ?, ?, ?, ?)", (
+            user_id, product_id, quantity, supplier_id, purchases_id, unit_price)
+            )
         db.commit()
+
+        flash("Item Added")
 
         return redirect("/products")
 
     else:
 
-        return render_template("products.html", category_list=category_list)
-
-""" 
-        stock = lookup(request.form.get("symbol"))
-        if stock:
-            shares = (request.form.get("shares"))
-            try:
-                int(shares)
-            except:
-                return apology("invalid data type", 400)
-
-            shares = int(shares)
-
-            if shares < 0:
-                return apology("invalid data type", 400)
-
-            purchase = shares * stock["price"]
-            cash = cur.execute("SELECT cash FROM users WHERE id = (?)", user_id)
-
-            if purchase > cash[0]['cash']:
-
-                flash("You don't have enough Cash")
-                return redirect("/products")
-
-            else:
-
-                cur.execute("UPDATE users SET cash = cash - (?) WHERE id = (?)", purchase, user_id)
-
-                dt = cur.execute("SELECT datetime()")
-                cur.execute(
-                    "INSERT INTO portfolio (symbol, shares, price, user_id, operation, operation_time) VALUES(?, ?, ?, ?, ?, ?)",
-                    stock["symbol"], shares, stock["price"], user_id, "b", dt[0]["datetime()"])
-
-                flash("Bought!")
-
-                return redirect("/")
-        else:
-            return apology("invalid stock", 400)
- """
+        return render_template("products.html", shopping_list=shopping_list)
 
 
-@app.route("/fetchsubcat", methods=["GET", "POST"])
+@app.route("/fetchsubcat")
 @login_required
 def fetchsubcat():
-    if request.method == 'GET':
-        query = request.args.get('query')
-        parent_id = cur.execute("SELECT id FROM categoria WHERE descricao = ?", (query,)).fetchone()[0]
-        sublist = []
-        data = cur.execute("SELECT descricao FROM categoria WHERE parent_id = ?", (parent_id,)).fetchall()
-        
-        for i in data:
-            sublist.append(list(i))
+    query_sub = request.args.get('query_sub')
+    parent_id = cur.execute("SELECT categoria_id FROM compras WHERE id = ?", (query_sub,)).fetchone()[0]
+    max_value = cur.execute("SELECT MAX (id) FROM categoria WHERE parent_id = ? GROUP BY parent_id", (parent_id,)).fetchone()
+    if max_value:
+        max_value = max_value[0]
 
-        return jsonify(result=sublist)
+    data_sub = cur.execute("SELECT id, descricao FROM categoria WHERE parent_id = ?", (parent_id,)).fetchall()
+    sublist = [dict(row) for row in data_sub]
+
+    return jsonify(sublist=sublist, parentid=parent_id, maxvalue=max_value)
+
+
+@app.route("/fetchprod")
+@login_required
+def fetchprod():
+    data_prod = cur.execute("SELECT * FROM produto").fetchall()
+    data_sup = cur.execute("SELECT * FROM fornecedor").fetchall()
+
+    productlist = [dict(row) for row in data_prod]
+    supplierlist = [dict(row) for row in data_sup]
+
+    return jsonify(productlist=productlist, supplierlist=supplierlist)
 
 
 @app.route("/history")
@@ -198,11 +201,18 @@ def logout():
     return redirect("/")
 
 
-@app.route("/quote", methods=["GET", "POST"])
+@app.route("/purchases", methods=["GET", "POST"])
 @login_required
 def quote():
-    """Get stock quote."""
+    """Show/Add purchases"""
+
+    purchases = cur.execute(
+        "SELECT compras.id, compras.compra_total, compras.categoria_id, categoria.descricao, compras.data FROM compras INNER JOIN categoria ON compras.categoria_id=categoria.id"
+        ).fetchall()
+
+
     if request.method == "POST":
+        user_id = session["user_id"]
         stock = lookup(request.form.get("symbol"))
 
         if stock:
@@ -212,7 +222,7 @@ def quote():
             return apology("invalid stock", 400)
 
     else:
-        return render_template("quote.html")
+        return render_template("purchases.html", purchases=purchases)
 
 
 @app.route("/register", methods=["GET", "POST"])
