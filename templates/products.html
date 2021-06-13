@@ -20,17 +20,17 @@
             <input class="form-control" name="id" placeholder="ID" type="text" id=product_id required autocomplete="off">
         </div>
         <div class="mb-3">
-            <input class="form-control" name="product_name" placeholder="Product Name" type="text" id=product_name required autocomplete="off">
+            <input class="form-control" name="product_name" placeholder="Item Name" type="text" id=product_name required autocomplete="off">
         </div>
         <div class="mb-3">
             <input class="form-control" name="subcategory" placeholder="Subcategory" type="text" id="subcat" required autocomplete="off">
             <input class="form-control" name="subcategoryid" id="subcatid" type="hidden">
         </div>
         <div class="mb-3">
-            <input autocomplete="off" class="form-control" name="unit_price" placeholder="Unit Price" type="number" required autocomplete="off">
+            <input class="form-control" name="unit_price" placeholder="Unit Price" type="number" step="0.01" required autocomplete="off">
         </div>
         <div class="mb-3">
-            <input autocomplete="off" class="form-control" name="quantity" placeholder="Quantity" type="number" required autocomplete="off">
+            <input class="form-control" name="quantity" placeholder="Quantity" type="number" required autocomplete="off">
         </div>
         <div class="mb-3">
             <input class="form-control" name="supplier" placeholder="Supplier" type="text" id="supplier" required autocomplete="off">
@@ -48,10 +48,6 @@
                 $.getJSON($SCRIPT_ROOT + '/fetchsubcat', {query_sub: $('select[name="purchases"]').val(),
             }, function(data) {
                 var subcat_list = $.map(data.sublist, function(value, key) {return {label: value.descricao, value: value.id}});
-                console.log(subcat_list)
-                console.log(subcat_list.length)
-                console.log(data.parentid)
-                console.log(data.maxvalue)
                 
                 if (subcat_list.length !== 0) {
                     $('#subcat').autocomplete({

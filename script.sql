@@ -30,13 +30,11 @@ CREATE TABLE produto_categoria (
 
 CREATE TABLE compra_produto (
     id INTEGER PRIMARY KEY NOT NULL,
-    user_id INTEGER,
     produto_id INTEGER,
     quant DECIMAL(15,2),
     fornecedor_id INTEGER,
     compras_id INTEGER,
     preco_unit DECIMAL (15,2),
-    FOREIGN KEY (user_id) REFERENCES user(id),
     FOREIGN KEY (produto_id) REFERENCES produto(id),
     FOREIGN KEY (fornecedor_id) REFERENCES fornecedor(id)
     FOREIGN KEY (compras_id) REFERENCES compras(id)
@@ -44,10 +42,11 @@ CREATE TABLE compra_produto (
 
 CREATE TABLE compras (
     id INTEGER PRIMARY KEY NOT NULL,
-    compra_total DECIMAL(15,2),
+    user_id INTEGER,
     categoria_id INTEGER,
     data DATE,
-    FOREIGN KEY (categoria_id) REFERENCES categoria(id)
+    FOREIGN KEY (categoria_id) REFERENCES categoria(id),
+    FOREIGN KEY (user_id) REFERENCES user(id)
 );
 
 CREATE TABLE produto_categoria (

@@ -49,6 +49,11 @@ produto_categoria = [
     (7896002360326,106)
     ]
 
+compras= [
+    (20210606001, 1, 1, '2021-06-09'),
+    (20210610001, 1, 6, '2021-06-10')
+]
+
 #cur.executemany('INSERT INTO categoria (descricao, parent_id) VALUES (?, ?)', categorias)
 
 #cur.executemany('INSERT INTO categoria (id, descricao, parent_id) VALUES (?, ?, ?)', subcategorias)
@@ -56,10 +61,21 @@ produto_categoria = [
 cur.executemany('INSERT INTO fornecedor (id, fornecedor_nome) VALUES (?, ?)', fornecedores)
 
 db.commit() """
+purchase_id = 2
+user_id = 1
+category = 1
+data = '2021-06-11'
 
 
-cur.executemany('INSERT INTO produto_categoria (id_produto, id_categoria) VALUES (?, ?)', produto_categoria)
+""" data = cur.execute(
+    "SELECT compras.id, SUM((compra_produto.quant * compra_produto.preco_unit)) AS total, compras.categoria_id, categoria.descricao, compras.data FROM compras " \
+        "INNER JOIN categoria ON compras.categoria_id=categoria.id LEFT JOIN compra_produto ON compras.id = compra_produto.compras_id WHERE user_id = ? " \
+            "GROUP BY compras.id", (user_id,)
+    ).fetchall() """
 
+
+cur.executemany('INSERT INTO compras (id, user_id,  categoria_id, data) VALUES (?, ?, ?, ?)', compras)
+#cur.execute("INSERT INTO compras (id, user_id, compra_total, categoria_id, data) VALUES (?, ?, ?, ?, ?)", (purchase_id, user_id, total_value, category, data))
 db.commit()
 
 #category_list = cur.execute("SELECT descricao FROM categoria WHERE parent_id IS NULL").fetchall()
@@ -83,13 +99,30 @@ db.commit() """
 """ purchases = cur.execute(
     "SELECT compras.id, compras.compra_total, categoria.descricao, compras.data FROM compras INNER JOIN categoria ON compras.categoria_id=categoria.id"
     ).fetchone() """
+
+
 """
-var = cur.execute("SELECT MAX (id) FROM categoria WHERE parent_id = 6 GROUP BY parent_id").fetchone()
+var = cur.execute("SELECT MAX (id) FROM categoria WHERE parent_id = 6 GROUP BY parent_id").fetchone() 
 print(var[0])
 
 result = [dict(row) for row in shopping_list]
 json.dumps(result)
 print(result) """
+""" query = 20210606001
+data = cur.execute(
+    "SELECT produto.produto_nome, SUM(compra_produto.quant) AS quant, compra_produto.preco_unit, fornecedor.fornecedor_nome " \
+        "FROM compra_produto INNER JOIN produto ON compra_produto.produto_id = produto.id " \
+            "INNER JOIN fornecedor ON compra_produto.fornecedor_id = fornecedor.id " \
+                "WHERE compras_id = ? GROUP BY produto.id", (query,)
+    ).fetchall()
+
+
+""" 
+data_dict = [dict(row) for row in data]
+""" for row in data_dict:
+    row['total'] = row['quant'] * row['preco_unit'] """
+
+print(data_dict)
 
 
 

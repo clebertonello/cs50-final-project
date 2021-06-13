@@ -42,19 +42,48 @@ db = sqlite3.connect("mercado.db", check_same_thread=False)
 cur = db.cursor()
 cur.row_factory = sqlite3.Row
 
-# Make sure API key is set
-#if not os.environ.get("API_KEY"):
-#    raise RuntimeError("API_KEY not set")
 
-
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 @login_required
 def index():
-    """Show portfolio of stocks"""
-
+    """Show/Add purchases"""
     user_id = session["user_id"]
+    purchases = cur.execute(
+        "SELECT compras.id, SUM((compra_produto.quant * compra_produto.preco_unit)) AS total, compras.categoria_id, categoria.descricao, compras.data FROM compras " \
+            "INNER JOIN categoria ON compras.categoria_id=categoria.id LEFT JOIN compra_produto ON compras.id = compra_produto.compras_id WHERE user_id = ? " \
+                "GROUP BY compras.id ORDER BY compras.data DESC", (user_id,)
+        ).fetchall()
+    category = cur.execute("SELECT id, descricao FROM categoria WHERE parent_id IS NULL").fetchall()
 
-    return render_template("index.html")
+
+    if request.method == "POST":
+        button = request.form.get("postbutton")
+        purchase_id = request.form.get("id")
+
+        if button == "remove":
+            cur.execute("DELETE FROM compras WHERE id = ?", (purchase_id,))
+            cur.execute("DELETE FROM compra_produto WHERE compras_id = ?", (purchase_id,))
+            db.commit()
+            
+            flash("Removed")
+        else:
+            category_id = request.form.get("category")
+            data = request.form.get("date")
+
+            if purchase_id == '':
+                cur.execute("INSERT INTO compras (user_id, categoria_id, data) VALUES ( ?, ?, ?)", (user_id, category_id, data))
+            else:
+                cur.execute("INSERT INTO compras (id, user_id, categoria_id, data) VALUES (?, ?, ?, ?)", (purchase_id, user_id, category_id, data))
+            
+            db.commit()
+
+            flash("Added")
+
+        return redirect("/")
+
+    else:
+        return render_template("index.html", purchases=purchases, category=category)
+
 
 # source: https://tutorial101.blogspot.com/2021/02/python-flask-jquery-ajax-live-data.html
 @app.route("/products", methods=["GET", "POST"])
@@ -65,7 +94,6 @@ def products():
     shopping_list = cur.execute("SELECT id FROM compras").fetchall()
 
     if request.method == "POST":
-        user_id = session["user_id"]
         purchases_id = request.form.get("purchases")
         product_id = request.form.get("id")
         product_name = request.form.get("product_name").upper()
@@ -99,8 +127,8 @@ def products():
                 )
 
         cur.execute(
-            "INSERT INTO compra_produto (user_id, produto_id, quant, fornecedor_id, compras_id, preco_unit) VALUES (?, ?, ?, ?, ?, ?)", (
-            user_id, product_id, quantity, supplier_id, purchases_id, unit_price)
+            "INSERT INTO compra_produto (produto_id, quant, fornecedor_id, compras_id, preco_unit) VALUES (?, ?, ?, ?, ?)", (
+            product_id, quantity, supplier_id, purchases_id, unit_price)
             )
         db.commit()
 
@@ -140,14 +168,40 @@ def fetchprod():
     return jsonify(productlist=productlist, supplierlist=supplierlist)
 
 
-@app.route("/history")
+@app.route("/fetchpur")
 @login_required
-def history():
-    """Show history of transactions"""
-    user_id = session["user_id"]
-    portfolio = cur.execute("SELECT symbol, shares, price, operation_time FROM portfolio WHERE user_id = (?)", user_id)
+def fetchpur():
+    query = request.args.get("query")
 
-    return render_template("history.html", portfolio=portfolio)
+    data = cur.execute(
+        "SELECT produto.produto_nome, SUM(compra_produto.quant) AS quant, compra_produto.preco_unit, fornecedor.fornecedor_nome " \
+            "FROM compra_produto INNER JOIN produto ON compra_produto.produto_id = produto.id " \
+                "INNER JOIN fornecedor ON compra_produto.fornecedor_id = fornecedor.id " \
+                    "WHERE compras_id = ? GROUP BY produto.id", (query,)
+        ).fetchall()
+    
+    purlist = [dict(row) for row in data]
+    for row in purlist:
+        row['total'] = row['quant'] * row['preco_unit']
+
+    return jsonify(purlist=purlist, q=query)
+
+
+@app.route("/category", methods=["GET", "POST"])
+@login_required
+def category():
+    """Show history of transactions"""
+    category_list = cur.execute("SELECT * FROM categoria WHERE parent_id IS NULL").fetchall()
+    
+    if request.method == "POST":
+        category_id = request.form.get("id")
+        print(category_id)
+        cur.execute("DELETE FROM categoria WHERE id = ?", (category_id,))
+        db.commit()
+
+        flash("Item Removed")
+
+    return render_template("category.html", category_list=category_list)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -199,30 +253,6 @@ def logout():
 
     # Redirect user to login form
     return redirect("/")
-
-
-@app.route("/purchases", methods=["GET", "POST"])
-@login_required
-def quote():
-    """Show/Add purchases"""
-
-    purchases = cur.execute(
-        "SELECT compras.id, compras.compra_total, compras.categoria_id, categoria.descricao, compras.data FROM compras INNER JOIN categoria ON compras.categoria_id=categoria.id"
-        ).fetchall()
-
-
-    if request.method == "POST":
-        user_id = session["user_id"]
-        stock = lookup(request.form.get("symbol"))
-
-        if stock:
-            stock_text = ("A share of {}. ({}) costs {}.").format(stock['name'], stock['symbol'], usd(stock['price']))
-            return render_template("quote.html", stock_text=stock_text)
-        else:
-            return apology("invalid stock", 400)
-
-    else:
-        return render_template("purchases.html", purchases=purchases)
 
 
 @app.route("/register", methods=["GET", "POST"])

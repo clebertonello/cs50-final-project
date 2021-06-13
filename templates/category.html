@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Categories
+{% endblock %}
+
+{% block main %}
+    <form action="/" method="POST">
+        <div class="container-fluid d-flex justify-content-center">    
+            <table class="table align-middle">
+                <thead>
+                    <tr style="text-align: center">
+                        <th scope="col">ID</th>
+                        <th scope="col">Description</th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <td><input name="category_id" type="number" required class="form-control"></td>
+                    <td><input name="category_description" type="text" required class="form-control"></td>
+                    <td><button type="submit" class="btn btn-primary">Add Category</button></td>
+                </tbody>
+            </table>
+        </div>
+    </form>
+    <br>
+        <div class="container-fluid d-flex justify-content-center">
+            <h2 style="padding: 10px">Registered Categories</h2>
+        </div>
+        <div class="container-fluid d-flex justify-content-center">
+            
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr style="text-align:center">
+                        <th scope="col">ID</th>
+                        <th scope="col">Descrição</th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in category_list %}
+                        <tr style="text-align:center">
+                            <form action="/category" method="POST">
+                                <th>{{ item['id'] }}</td>
+                                <input type="hidden" name="id" value="{{ item['id']}}">
+                                <td value="{{ item['descricao']}}">{{ item['descricao'] }}</td>
+                                <td><button class="btn btn-secondary" type="submit" name="postbutton" value="remove">Remove</button></td>
+                            </form>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+{% endblock %}
