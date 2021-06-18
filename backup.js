@@ -54,3 +54,34 @@ $('.show').click(function() {
     })
 
 });
+
+$('.show').click(function () {
+    var q = $(this).val()
+    $.getJSON($SCRIPT_ROOT + '/fetchsubcat', {
+        query: q,
+    }, function (data) {
+        $(".dyntable").empty();
+        var content = "<tr class=' dyntable'><td colspan='6'><table style='padding: 15px' class='table table-secondary align-middle'>\
+            <thead>\
+                <tr style='text-align:center'>\
+                    <th scope='col' width='20%'>ID</th>\
+                    <th scope='col' width='50%'>SubCat</th>\
+                    <th scope='col' width='15%'></th>\
+                    <th scope='col' width='15%'></th>\
+                </tr>\
+            </thead>\
+            <tbody>";
+
+        for (var i = 0; i < data.sublist.length; i++) {
+            content += "<tr style='text-align:center' id='removeLine'><form action='/category' method='POST' id='removeTarget'>"
+            content += "<td>" + data.sublist[i].id + "<input type='hidden' value=" + data.sublist[i].id + "></td>"
+            content += "<td style='text-transform:capitalize;'>" + data.sublist[i].descricao + "</td>"
+            content += "<td></td>"
+            content += "<td><button class='btn btn-secondary subremove' type='button' name='postbutton' value='remove'>Remove</button></td>"
+            content += "</form></tr>"
+        }
+        content += "</tbody></table></tr>"
+        /* $(content).insertAfter($('#tr' + q)); */
+        $('#tr' + q).append($(content));
+    })
+});

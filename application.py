@@ -38,7 +38,7 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 # Configure CS50 Library to use SQLite database
-db = sqlite3.connect("mercado.db", check_same_thread=False)
+db = sqlite3.connect("budget.db", check_same_thread=False)
 cur = db.cursor()
 cur.row_factory = sqlite3.Row
 
@@ -48,14 +48,31 @@ cur.row_factory = sqlite3.Row
 def index():
     """Show/Add purchases"""
     user_id = session["user_id"]
+    currentYear = date.today().strftime("%Y")
+    yearsList = cur.execute(("SELECT DISTINCT strftime('%Y', data) AS year FROM compras WHERE NOT year = ? "), (currentYear,)).fetchall()
     purchases = cur.execute(
         "SELECT compras.id, SUM((compra_produto.quant * compra_produto.preco_unit)) AS total, compras.categoria_id, categoria.descricao, compras.data FROM compras " \
             "INNER JOIN categoria ON compras.categoria_id=categoria.id LEFT JOIN compra_produto ON compras.id = compra_produto.compras_id WHERE user_id = ? " \
                 "GROUP BY compras.id ORDER BY compras.data DESC", (user_id,)
         ).fetchall()
+    purchasesbycat = cur.execute(
+        "SELECT categoria.descricao, SUM((compra_produto.quant * compra_produto.preco_unit)) AS total FROM compras " \
+            "INNER JOIN categoria ON compras.categoria_id=categoria.id LEFT JOIN compra_produto ON compras.id = compra_produto.compras_id "\
+            "WHERE user_id = ? AND strftime('%Y', compras.data) = ?" \
+            "GROUP BY compras.categoria_id ORDER BY total DESC", (user_id, currentYear)
+    ).fetchall()
+    spendbymonth = cur.execute(
+        "SELECT SUM((compra_produto.quant * compra_produto.preco_unit)) AS total, strftime('%m', compras.data) AS month FROM compras " \
+            "LEFT JOIN compra_produto ON compras.id = compra_produto.compras_id WHERE user_id = ? AND strftime('%Y', compras.data) = ?" \
+                "GROUP BY strftime('%m', compras.data) ORDER BY compras.data", (user_id, currentYear)
+        ).fetchall()
+
+
+    pbc = [dict(item) for item in purchasesbycat]
+
+
     category = cur.execute("SELECT id, descricao FROM categoria WHERE parent_id IS NULL").fetchall()
-
-
+    
     if request.method == "POST":
         button = request.form.get("postbutton")
         purchase_id = request.form.get("id")
@@ -69,6 +86,9 @@ def index():
         else:
             category_id = request.form.get("category")
             data = request.form.get("date")
+            
+            if data == '':
+                data = date.today()
 
             if purchase_id == '':
                 cur.execute("INSERT INTO compras (user_id, categoria_id, data) VALUES ( ?, ?, ?)", (user_id, category_id, data))
@@ -82,78 +102,139 @@ def index():
         return redirect("/")
 
     else:
-        return render_template("index.html", purchases=purchases, category=category)
+        return render_template("index.html", purchases=purchases, category=category, purchasesbycat=pbc, spendbymonth=spendbymonth, yearslist=yearsList, currentYear=currentYear)
+
+
+@app.route("/changeyear")
+@login_required
+def changeyear():
+
+    query = request.args.get('query')
+    user_id = session["user_id"]
+
+    spendbymonth = cur.execute(
+    "SELECT SUM((compra_produto.quant * compra_produto.preco_unit)) AS total, strftime('%m', compras.data) AS month FROM compras " \
+        "LEFT JOIN compra_produto ON compras.id = compra_produto.compras_id WHERE user_id = ? AND strftime('%Y', compras.data) = ?" \
+            "GROUP BY strftime('%m', compras.data) ORDER BY compras.data", (user_id, query)
+    ).fetchall()
+
+    purchasesbycat = cur.execute(
+    "SELECT categoria.descricao, SUM((compra_produto.quant * compra_produto.preco_unit)) AS total FROM compras " \
+        "INNER JOIN categoria ON compras.categoria_id=categoria.id LEFT JOIN compra_produto ON compras.id = compra_produto.compras_id "\
+            "WHERE user_id = ? AND strftime('%Y', compras.data) = ?" \
+            "GROUP BY compras.categoria_id ORDER BY total DESC", (user_id, query)
+    ).fetchall()
+
+    spendMonth = [dict(item) for item in spendbymonth]
+    spendCat = [dict(item) for item in purchasesbycat]
+    print(spendMonth)
+    print(spendCat)
+
+    return jsonify(spendMonth=spendMonth, spendCat=spendCat)
 
 
 # source: https://tutorial101.blogspot.com/2021/02/python-flask-jquery-ajax-live-data.html
-@app.route("/products", methods=["GET", "POST"])
+@app.route("/items", methods=["GET", "POST"])
 @login_required
-def products():
+def items():
     """add product to database"""
+    addItems = request.args.get("idadditems")
+    shopping_list = cur.execute("SELECT id FROM compras ORDER BY data DESC").fetchall()
+    buttonValue = request.form.get('postbutton')
 
-    shopping_list = cur.execute("SELECT id FROM compras").fetchall()
+    itemList = cur.execute(
+        "SELECT produto.id, produto.produto_nome, c.descricao AS category, categoria.descricao AS subcategory FROM produto " \
+            "INNER JOIN produto_categoria ON produto.id=produto_categoria.id_produto " \
+                "INNER JOIN categoria ON produto_categoria.id_categoria=categoria.id "\
+                    "INNER JOIN (SELECT id, descricao FROM categoria WHERE parent_id IS NULL) c ON categoria.parent_id=c.id " \
+                        "ORDER BY category"
+    )
 
     if request.method == "POST":
-        purchases_id = request.form.get("purchases")
-        product_id = request.form.get("id")
-        product_name = request.form.get("product_name").upper()
-        category_id = cur.execute("SELECT categoria_id FROM compras WHERE id = ?", (purchases_id,)).fetchone()[0]
-        subcategory = request.form.get("subcategory").upper()
-        subcategory_id = request.form.get("subcategoryid")
-        quantity = request.form.get("quantity")
-        supplier = request.form.get("supplier").upper()
-        supplier_id = request.form.get("supplierid")
-        unit_price = request.form.get("unit_price")
+        if buttonValue == "edit":
+            print("edit")
 
-        product_check = cur.execute("SELECT id FROM produto WHERE id = ?", (product_id,)).fetchone()
-        category_check = cur.execute("SELECT id FROM categoria WHERE id = ?", (subcategory_id,)).fetchone()
+        elif buttonValue == "remove":
+            print("remove")
 
-        if category_check is None:
-            cur.execute(
-                "INSERT INTO categoria (id, descricao, parent_id) VALUES (?, ?, ?)", (subcategory_id, subcategory, category_id)
-                )
+        else:
+            purchases_id = request.form.get("purchases")
+            product_name = request.form.get("product_name").lower()
+            subcategory = request.form.get("subcategory").lower()
+            quantity = request.form.get("quantity")
+            place = request.form.get("place").lower()
+            unit_price = request.form.get("unit_price")
 
-        if product_check is None:
-            cur.execute(
-                "INSERT INTO produto_categoria (id_produto, id_categoria) VALUES (?, ?)", (product_id, subcategory_id)
-                )
-            cur.execute(
-                "INSERT INTO produto (id, produto_nome) VALUES (?, ?)", (product_id, product_name)
-                )
-        
-        if supplier_id is None:
-            cur.execute(
-                "INSERT INTO fornecedor (id, produto_nome) VALUES (?, ?)", (supplier_id, supplier)
-                )
+            catId = cur.execute("SELECT categoria_id FROM compras WHERE id = ?", (purchases_id,)).fetchone()[0]
+            productId = cur.execute("SELECT id FROM produto WHERE produto_nome = ?", (product_name,)).fetchone()
+            subcatId = cur.execute("SELECT id FROM categoria WHERE descricao = ?", (subcategory,)).fetchone()
+            placeId = cur.execute("SELECT id FROM fornecedor WHERE fornecedor_nome = ?", (place,)).fetchone()
 
-        cur.execute(
-            "INSERT INTO compra_produto (produto_id, quant, fornecedor_id, compras_id, preco_unit) VALUES (?, ?, ?, ?, ?)", (
-            product_id, quantity, supplier_id, purchases_id, unit_price)
-            )
+            if subcatId is None:
+                maxId = cur.execute("SELECT MAX (id) FROM categoria WHERE parent_id = ? GROUP BY parent_id", (catId,)).fetchone()
+                if maxId:
+                    subcatId = maxId[0] + 1
+                    cur.execute(
+                        "INSERT INTO categoria (id, descricao, parent_id) VALUES (?, ?, ?)", (subcatId, subcategory, catId)
+                        )
+                else:
+                    subcatId = catId * 100
+                    cur.execute(
+                        "INSERT INTO categoria (id, descricao, parent_id) VALUES (?, ?, ?)", (subcatId, subcategory, catId)
+                        )
+            else:
+                subcatId = subcatId[0]
+
+            if productId is None:
+                cur.execute(
+                    "INSERT INTO produto (produto_nome) VALUES (?)", (product_name,)
+                    )
+                productId = cur.execute("SELECT id FROM produto WHERE produto_nome = ?", (product_name,)).fetchone()[0]
+                cur.execute(
+                    "INSERT INTO produto_categoria (id_produto, id_categoria) VALUES (?, ?)", (productId, subcatId)
+                    )
+            else:
+                productId = productId[0]
+            
+            if placeId is None:
+                cur.execute(
+                    "INSERT INTO fornecedor (fornecedor_nome) VALUES (?)", (place,)
+                    )
+                placeId = cur.execute("SELECT id FROM fornecedor WHERE fornecedor_nome = ?", (place,)).fetchone()[0]
+            else:
+                placeId = placeId[0]
+
+            cur.execute(
+                "INSERT INTO compra_produto (produto_id, quant, fornecedor_id, compras_id, preco_unit) VALUES (?, ?, ?, ?, ?)", (
+                productId, quantity, placeId, purchases_id, unit_price)
+                )
+            
+            flash("Item Added")
+
         db.commit()
 
-        flash("Item Added")
-
-        return redirect("/products")
+        return redirect("/items")
 
     else:
 
-        return render_template("products.html", shopping_list=shopping_list)
+        return render_template("items.html", shopping_list=shopping_list, addItems=addItems, itemList=itemList)
 
 
 @app.route("/fetchsubcat")
 @login_required
 def fetchsubcat():
     query_sub = request.args.get('query_sub')
-    parent_id = cur.execute("SELECT categoria_id FROM compras WHERE id = ?", (query_sub,)).fetchone()[0]
-    max_value = cur.execute("SELECT MAX (id) FROM categoria WHERE parent_id = ? GROUP BY parent_id", (parent_id,)).fetchone()
-    if max_value:
-        max_value = max_value[0]
+    query = request.args.get('query')
+
+    if query_sub:
+        parent_id = cur.execute("SELECT categoria_id FROM compras WHERE id = ?", (query_sub,)).fetchone()[0]
+    else:
+        parent_id = query
 
     data_sub = cur.execute("SELECT id, descricao FROM categoria WHERE parent_id = ?", (parent_id,)).fetchall()
     sublist = [dict(row) for row in data_sub]
 
-    return jsonify(sublist=sublist, parentid=parent_id, maxvalue=max_value)
+    return jsonify(sublist=sublist, parentid=parent_id)
 
 
 @app.route("/fetchprod")
@@ -163,9 +244,9 @@ def fetchprod():
     data_sup = cur.execute("SELECT * FROM fornecedor").fetchall()
 
     productlist = [dict(row) for row in data_prod]
-    supplierlist = [dict(row) for row in data_sup]
+    placelist = [dict(row) for row in data_sup]
 
-    return jsonify(productlist=productlist, supplierlist=supplierlist)
+    return jsonify(productlist=productlist, placelist=placelist)
 
 
 @app.route("/fetchpur")
@@ -174,9 +255,10 @@ def fetchpur():
     query = request.args.get("query")
 
     data = cur.execute(
-        "SELECT produto.produto_nome, SUM(compra_produto.quant) AS quant, compra_produto.preco_unit, fornecedor.fornecedor_nome " \
+        "SELECT produto.produto_nome, SUM(compra_produto.quant) AS quant, categoria.descricao, compra_produto.preco_unit, fornecedor.fornecedor_nome " \
             "FROM compra_produto INNER JOIN produto ON compra_produto.produto_id = produto.id " \
-                "INNER JOIN fornecedor ON compra_produto.fornecedor_id = fornecedor.id " \
+                "INNER JOIN fornecedor ON compra_produto.fornecedor_id = fornecedor.id INNER JOIN produto_categoria ON compra_produto.produto_id = produto_categoria.id_produto " \
+                    "INNER JOIN categoria ON produto_categoria.id_categoria = categoria.id " \
                     "WHERE compras_id = ? GROUP BY produto.id", (query,)
         ).fetchall()
     
@@ -184,24 +266,65 @@ def fetchpur():
     for row in purlist:
         row['total'] = row['quant'] * row['preco_unit']
 
-    return jsonify(purlist=purlist, q=query)
+    return jsonify(purlist=purlist)
 
 
 @app.route("/category", methods=["GET", "POST"])
 @login_required
 def category():
-    """Show history of transactions"""
-    category_list = cur.execute("SELECT * FROM categoria WHERE parent_id IS NULL").fetchall()
-    
+    """Categories section"""
+    categories = cur.execute("SELECT * FROM categoria WHERE parent_id IS NULL").fetchall()
+    subcategories = cur.execute("SELECT * FROM categoria WHERE parent_id IS NOT NULL").fetchall()
+
     if request.method == "POST":
-        category_id = request.form.get("id")
-        print(category_id)
-        cur.execute("DELETE FROM categoria WHERE id = ?", (category_id,))
+        button = request.form.get("postbutton")
+
+        if button == "remove":
+            category_id = request.form.get("id")
+            cur.execute("DELETE FROM categoria WHERE id = ?", (category_id,))
+            cur.execute("DELETE FROM categoria WHERE parent_id = ?", (category_id,))
+
+            flash("Removed")
+
+        elif button == "edit":
+            oldId = request.form.get("oldId")
+            oldParent = request.form.get("oldParent")
+            oldDescription = request.form.get("oldDescription")
+            newId = request.form.get("newId")
+            newDescription = request.form.get("newDescription").lower()
+            newParent = request.form.get("newParent")
+
+            if newId == '':
+                newId = oldId
+
+            if newDescription == '':
+                newDescription = oldDescription
+
+            if newParent is None and oldParent is not None:
+                newParent = oldParent
+            
+            cur.execute("UPDATE categoria SET id = ?, descricao = ?, parent_id = ? WHERE id = ?", (newId, newDescription, newParent, oldId))
+            
+            if newParent is None:
+                cur.execute("UPDATE categoria SET parent_id = ? WHERE parent_id = ?", (newId, oldId))
+            
+            cur.execute("UPDATE produto_categoria SET id_categoria = ? WHERE id_categoria = ?", (newId, oldId))
+
+            flash("Edited")
+        else:
+            catId = request.form.get("categoryId")
+            catDesc = request.form.get("catDesc")
+            catParent = request.form.get("catParent")
+
+            cur.execute("INSERT INTO categoria (id, descricao, parent_id) VALUES (?, ?, ?)", (catId, catDesc, catParent))
+
+            flash("Added")
+
         db.commit()
 
-        flash("Item Removed")
+        return redirect("/category")
 
-    return render_template("category.html", category_list=category_list)
+    return render_template("category.html", category_list=categories, subcategories=subcategories)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -288,52 +411,6 @@ def register():
     # User reached route via GET (as by clicking a link or via redirect)
     else:
         return render_template("register.html")
-
-
-@app.route("/sell", methods=["GET", "POST"])
-@login_required
-def sell():
-    """Sell shares of stock"""
-    user_id = session["user_id"]
-    stocks_list = cur.execute("SELECT symbol, SUM(shares) AS shares FROM portfolio WHERE user_id = (?) GROUP BY symbol", user_id)
-
-    if request.method == "POST":
-
-        shares_max = 0
-        for i in range(len(stocks_list)):
-            if stocks_list[i]["symbol"] == request.form.get("symbol"):
-                shares_max = stocks_list[i]["shares"]
-
-        stock = lookup(request.form.get("symbol"))
-        shares = request.form.get("shares")
-
-        try:
-            int(shares)
-        except:
-            return apology("invalid data type", 400)
-
-        shares = int(shares)
-
-        if shares < shares_max:
-            shares *= (-1)
-            purchase = shares * stock["price"]
-
-            cur.execute("UPDATE users SET cash = cash - (?) WHERE id = (?)", (purchase, user_id,))
-
-            dt = cur.execute("SELECT datetime()")
-            cur.execute(
-                "INSERT INTO portfolio (symbol, shares, price, user_id, operation, operation_time) VALUES(?, ?, ?, ?, ?, ?)",
-                stock["symbol"], shares, stock["price"], user_id, "s", dt[0]["datetime()"])
-
-            flash("Sold!")
-
-            return redirect("/")
-
-        else:
-            return apology("you don't have that many shares", 400)
-
-    else:
-        return render_template("sell.html", stocks_list=stocks_list)
 
 
 def errorhandler(e):

@@ -5,49 +5,235 @@
 {% endblock %}
 
 {% block main %}
-    <form action="/" method="POST">
-        <div class="container-fluid d-flex justify-content-center">    
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Edit Category</h1>
+</div>
+<div class="table-responsive">
+    <div class="container-fluid d-flex justify-content-center">    
+        <table class="table align-middle">
+            <thead>
+                <tr style="text-align: center">
+                    <th scope="col" width="20%">ID</th>
+                    <th scope="col" width="40%">Description</th>
+                    <th scope="col" width="20%">Parent</th>
+                    <th scope="col" width="20%"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr style="text-align: center">
+                    <form action="/category" method="POST">
+                    <td>
+                        <input name="categoryId" type="number" min="0" step="1" required class="form-control inputcatid">
+                    </td>
+                    <td>
+                        <input name="catDesc" type="text" required class="form-control inputcatdesc"></td>
+                    <td>
+                        <select name="catParent" class="form-select">
+                            <option disabled selected value="">Parent (optional)</option>
+                            {% for item in category_list %}
+                                <option value="{{ item['id'] }}">{{ item['descricao'].capitalize() }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td><button type="submit" class="btn btn-primary" name="postbutton" value="add">Add Category</button></td>
+                </form>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+    <br>
+    <div class="container-fluid d-flex justify-content-center">
+        <h2 style="padding: 10px">Registered Categories</h2>
+    </div>
+    <div class="table-responsive">
+        <div class="container-fluid d-flex justify-content-center">           
             <table class="table align-middle">
                 <thead>
-                    <tr style="text-align: center">
-                        <th scope="col">ID</th>
-                        <th scope="col">Description</th>
-                        <th scope="col"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <td><input name="category_id" type="number" required class="form-control"></td>
-                    <td><input name="category_description" type="text" required class="form-control"></td>
-                    <td><button type="submit" class="btn btn-primary">Add Category</button></td>
-                </tbody>
-            </table>
-        </div>
-    </form>
-    <br>
-        <div class="container-fluid d-flex justify-content-center">
-            <h2 style="padding: 10px">Registered Categories</h2>
-        </div>
-        <div class="container-fluid d-flex justify-content-center">
-            
-            <table class="table table-striped align-middle">
-                <thead>
                     <tr style="text-align:center">
-                        <th scope="col">ID</th>
-                        <th scope="col">Descrição</th>
-                        <th scope="col"></th>
+                        <th scope="col" width="20%">ID</th>
+                        <th scope="col" width="40%">Description</th>
+                        <th scope="col" width="20%"></th>
+                        <th scope="col" width="20%"></th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody style="text-align:center">
                     {% for item in category_list %}
-                        <tr style="text-align:center">
+                        <tr id="tr{{ item['id']}}">
                             <form action="/category" method="POST">
                                 <th>{{ item['id'] }}</td>
                                 <input type="hidden" name="id" value="{{ item['id']}}">
-                                <td value="{{ item['descricao']}}">{{ item['descricao'] }}</td>
-                                <td><button class="btn btn-secondary" type="submit" name="postbutton" value="remove">Remove</button></td>
+                                <td
+                                    ><input type="hidden" name="id" id="description" value="{{ item['descricao'] }}">{{ item['descricao'].capitalize() }}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-outline-primary show" type="button" value="{{ item['id']}}">Show</button>
+                                        <button class="btn btn-outline-primary hide" type="button" value="{{ item['id']}}">Hide</button>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-primary edit" type="button" value="{{ item['id']}}">Edit</button>
+                                        <button class="btn btn-secondary" type="submit" name="postbutton" value="remove">Remove</button>
+                                    </div>
+                                </td>
                             </form>
+                        </tr>
+                        <tr style="display:none;" id="subs{{ item['id']}}"><td colspan='4'>
+                        <table class="table table-secondary align-middle dyntable text-align:center">
+                            <tbody style="text-align:center">
+                                <tr>
+                                    <th scope='col' width='20%'>ID</th>
+                                    <th scope='col' width='40%'>SubCat</th>
+                                    <th scope='col' width='20%'>Parent ID</th>
+                                    <th scope='col' width='20%'></th>
+                                </tr>
+                                {% for subs in subcategories %}
+                                {% if subs['parent_id'] == item['id'] %}
+                                <tr id="tr{{ subs['id'] }}">
+                                    <form action="/category" method="POST">
+                                    <td><input type="hidden" name="id" value="{{ subs['id'] }}">{{ subs['id'] }}</td>
+                                    <td><input type="hidden" name="id" id="description" value="{{ subs['descricao'] }}">{{ subs['descricao'].capitalize() }}</td>
+                                    <td><input type="hidden" name="parentid" id="parentid" value="{{ subs['parent_id'] }}">{{ subs['parent_id'] }}</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-primary subedit" type="button" value="{{ subs['id']}}">Edit</button>
+                                            <button class="btn btn-secondary subremove" type="submit" name="postbutton" value="remove">Remove</button>
+                                        </div>
+                                    </td>
+                                    </form>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                        </tbody></table></td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+    </div>
+
+        
+    <tr><td colspan='4'>
+    <table >
+        <tr style="display:none" class="table table-warning align-middle catform text-align:center">
+            <form action="/category" method="POST">
+                <td>
+                    <input class="form-control inputcatid" type="number" name="newId" placeholder="New ID (optional)">
+                    <input type="hidden" class="form-control" id="oldid" name="oldId" type="number">
+                </td>
+                <td>
+                    <input class="form-control inputcatdesc" type="text" name="newDescription" placeholder="New Description (optional)">
+                    <input type="hidden" class="form-control" id="olddescription" name="oldDescription" type="text"></td>
+                </td>
+                <td></td>
+                <td><button class="btn btn-primary" type="submit" name="postbutton" value="edit">Submit</button></td>
+            </form>
+        </tr>
+        <tr style="display:none" class="table table-warning align-middle subform text-align:center">
+            <form action="/category" method="POST">
+                <td>
+                    <input class="form-control inputcatid" type="number" name="newId" placeholder="New ID (optional)">
+                    <input type="hidden" class="form-control" id="suboldid" name="oldId" type="number"></td>
+                <td>
+                    <input class="form-control inputcatdesc" type="text" name="newDescription" placeholder="New Description (optional)">
+                    <input type="hidden" class="form-control" id="subolddescription" name="oldDescription" type="text"></td>
+                <td>
+                    <select name="newParent" class="form-select">
+                        <option disabled selected value=""> New Parent</option>
+                        {% for item in category_list %}
+                            <option value="{{ item['id'] }}">{{ item['descricao'].capitalize() }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="hidden" class="form-control" id="suboldparent" name="oldParent" type="number">
+                <td>
+                    <button class="btn btn-primary" type="submit" name="postbutton" value="edit">Submit</button>
+                </td>
+            </form>
+        </tr>
+    </table>
+    </td></tr>
+
+<script>
+/* SHOW / HIDE / EDIT */ 
+$('.show').click(function () {
+    var q = $(this).val()
+    $("#subs" + q).css('display', 'table-row');
+    });
+
+$('.hide').click(function () {
+    var q = $(this).val()
+    $("#subs" + q).css('display', 'none');
+    $(".catform, subform").css("display", "none");
+});
+
+$('.edit').click(function () {
+    $(".subform").css("display", "none");
+    var q = $(this).val();
+    var f = $('.catform');
+    var d = $("#tr" + q).find("#description").val();
+
+    $("#olddescription").val(d);
+    f.css("display", "table-row");
+    $("#oldid").val(q);
+    $(f).insertAfter("#tr" + q);
+});
+
+$('.subedit').click(function () {
+    $(".catform").css("display", "none");
+    var q = $(this).val();
+    var p = $("#tr" + q).find("#parentid").val();
+    var d = $("#tr" + q).find("#description").val();
+    var f = $('.subform');
+
+    f.css("display", "table-row");
+    $("#suboldid").val(q);
+    $("#suboldparent").val(p);
+    $("#subolddescription").val(d);
+    $(f).insertAfter("#tr" + q);
+});
+/* ################### */
+
+var idList = [];
+var descList = [];
+
+"{% for item in category_list %}"
+idList.push("{{ item['id'] }}")
+descList.push("{{ item['descricao'] }}")
+"{% endfor %}"
+"{% for item in subcategories %}"
+idList.push("{{ item['id'] }}")
+descList.push("{{ item['descricao'] }}")
+"{% endfor %}"
+
+$('.inputcatid').change(function(event)
+{
+    var id = $(this).val();
+    var msg = "ID already exists";
+    var check = idList.includes(id);
+    
+    if(idList.includes(id))
+    {
+        alert(msg)
+        $('.inputcatid').val('')
+        $('.inputcatid').focus()
+    }
+})
+
+$('.inputcatdesc').change(function(event)
+{
+    var id = $(this).val().toLowerCase();
+    var msg = "Description already exists";
+    var check = idList.includes(id);
+    
+    if(descList.includes(id))
+    {
+        alert(msg)
+        $('.inputcatdesc').val('')
+        $('.inputcatdesc').focus()
+    }
+})
+
+
+</script>
 {% endblock %}

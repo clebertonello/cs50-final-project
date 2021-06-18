@@ -1,116 +1,301 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Purchases
+Purchases
 {% endblock %}
 
 {% block main %}
-    
-<form action="/" method="POST">
-    <div class="container-fluid d-flex justify-content-center">    
-        <table class="table align-middle">
-            <thead>
-                <tr style="text-align:center">
-                    <th scope="col" width="33%">ID</th>
-                    <th scope="col" width="33%">Categoria</th>
-                    <th scope="col" width="33%">Data (aaaa-mm-dd)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr style="text-align:center">
-                    <td><input class="form-control" name="id" placeholder="ID" type="number" autocomplete="off"></td>
-                    <td><select name="category" class="form-select" required>
-                            <option disabled selected value="">Category</option>
-                            {% for item in category %}
-                                <option value="{{ item.id }}">{{ item.descricao }}</option>
-                            {% endfor %}
-                        </select>
-                        <td><input class="form-control datepicker" name="date" placeholder="Date" required autocomplete="off"></td>
-                </tr>
-            </tbody>
-        </table>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Dashboard</h1>
+    <div class="d-flex flex-row align-middel">
+        <div class="p-2">
+            <i class="far fa-calendar-alt fa-2x"></i>
+        </div>
+        <div class="p-2">
+        <select name="year" class="form-select" id="year" required>
+            <option selected value="{{ currentYear }}">{{ currentYear }}</option>
+            {% for item in yearslist %}
+            <option value="{{ item['year'] }}">{{ item['year'] }}</option>
+            {% endfor %}
+        </select></div>
     </div>
-    <div class="d-flex justify-content-center">
-        <button class="btn btn-primary" type="submit" name="postbutton" value="add">Add Purchase</button>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary mychart" value="donut">Donut</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary mychart" value="bar">Bar</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="yearchart">Year</button>
+        </div>
     </div>
-    <!-- datefilter: https://stackoverflow.com/questions/51345745/filter-dates-in-table-from-to-->
-</form>
-<br>
-<div class="container-fluid d-flex justify-content-center">
-    <table class="table table-striped align-middle">
+</div>
+<canvas class="my-4 w-100 myChartDiv" id="myChart" width="900" height="380"></canvas>
+
+
+<h2 class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-top">Add Spending</h2>
+<div class="table-responsive">
+    <form action="/" method="POST">
+        <div class="container-fluid d-flex justify-content-center">
+            <table class="table align-middle">
+                <thead>
+                    <tr style="text-align:center">
+                        <th scope="col" width="33%">ID</th>
+                        <th scope="col" width="33%">Category</th>
+                        <th scope="col" width="33%">Date</th>
+                    </tr>
+                </thead>
+                <tbody style="text-align:center">
+                    <tr >
+                        <td><input class="form-control" name="id" placeholder="ID" type="number" autocomplete="off"></td>
+                        <td>
+                            <select name="category" class="form-select" required>
+                                <option disabled selected value="">Category</option>
+                                {% for item in category %}
+                                <option value="{{ item.id }}">{{ item.descricao.capitalize() }}</option>
+                                {% endfor %}
+                            </select>
+                        <td><input class="form-control datepicker" name="date" placeholder="Date" autocomplete="off">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan='3'>
+                            <button class="btn btn-primary" type="submit" name="postbutton" value="add">Add Expense</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </form>
+</div>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom border-top">
+    <h1 class="h2">Spending List</h1>
+</div>
+<div class="table-responsive">
+    <table class="table table-sm align-middle">
         <thead>
             <tr style="text-align:center">
                 <th scope="col">ID</th>
-                <th scope="col">Valor Total</th>
-                <th scope="col">Categoria</th>
-                <th scope="col">Data</th>
-                <th scope="col"></th>
-                <th scope="col"></th>
+                <th scope="col">Total Value</th>
+                <th scope="col">Category</th>
+                <th scope="col">Date</th>
+                <th scope="col" width="10%"></th>
+                <th scope="col" width="10%"></th>
             </tr>
         </thead>
         <tbody>
             <!-- Loop through the database entries to display them in this table -->
             {% for item in purchases %}
-                <tr style="text-align:center">
-                    <form action="/" method="POST">
-                        <th>{{ item['id'] }}</td>
+            <tr style="text-align:center" id="tr{{ item['id']}}">
+                <form action="/" method="POST">
+                    <th>{{ item['id'] }}</td>
                         <input type="hidden" name="id" value="{{ item['id']}}">
                         <!-- source: https://stackoverflow.com/questions/19614027/jinja2-template-variable-if-none-object-set-a-default-value-->
-                        <td value="{{ item['total']}}">{{ (item['total'] or 0)|usd }}</td>
-                        <td value="{{ item['categoria_id']}}">{{ item['descricao'] }}</td>
-                        <td value="{{ item['data']}}">{{ item['data'] }}</td>
-                        <td><button class="btn btn-primary show" type="button" value="{{ item['id']}}">Show</button></td>
-                        <td><button class="btn btn-secondary" type="submit" name="postbutton" value="remove">Remove</button></td>
-                    </form>
-                    <tr>
-                        <td id="{{ item['id']}}" colspan="6" class="dyntable"></td>
-                    </tr>
-                </tr>
-                
+                    <td value="{{ item['total']}}">{{ (item['total'] or 0)|usd }}</td>
+                    <td value="{{ item['categoria_id']}}">{{ item['descricao'].capitalize() }}</td>
+                    <td value="{{ item['data']}}">{{ item['data'] }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-outline-primary show" type="button" value="{{ item['id']}}">Show</button>
+                            <button class="btn btn-outline-primary hide" type="button" value="{{ item['id']}}">Hide</button>
+                        </div>
+                    </td>
+                    <td><button class="btn btn-secondary" type="submit" name="postbutton" value="remove">Remove</button></td>
+                </form>
+            </tr>
+
             {% endfor %}
         </tbody>
     </table>
 </div>
 
+
 <script>
-    $(function() {
-        $('.datepicker').datepicker( {
+    $(function () {
+        $('.datepicker').datepicker({
             dateFormat: 'yy-mm-dd'
         })
     })
 
-    $('.show').click(function() {
-        $.getJSON($SCRIPT_ROOT + '/fetchpur',{
-            query: $(this).val(),
-        },function(data) {
-            console.log(data.purlist);
-            console.log(data.q);
-            $(".dyntable").empty();
-            var content = "<table style='padding: 15px' class='table align-middle'>\
+    $('.show').click(function () {
+        var q = $(this).val();
+        $.getJSON($SCRIPT_ROOT + '/fetchpur', {
+            query: q,
+        }, function (data) {
+            $(".dyntable").remove();
+            var content = "<tr class='table-secondary dyntable'><td colspan='6'><table style='padding: 15px' class='table align-middle'>\
                 <thead>\
                     <tr style='text-align:center'>\
-                        <th scope='col' width='35%'>Item</th>\
+                        <th scope='col' width='30%'>Item</th>\
+                        <th scope='col' width='20%'>SubCat</th>\
                         <th scope='col' width='10%'>Quantity</th>\
                         <th scope='col' width='10%'>Unit Price</th>\
                         <th scope='col' width='10%'>Total</th>\
-                        <th scope='col' width='35%'>Supplier</th>\
+                        <th scope='col' width='20%'>Place</th>\
                     </tr>\
                 </thead>\
                 <tbody>";
-            for(var i = 0; i < data.purlist.length; i++){
-                content += "<tr style='text-align:center'>"
-                content += "<td style='text-align:left'>" + data.purlist[i].produto_nome + "</td>"
-                content += "<td>" + data.purlist[i].quant + "</td>"
-                content += "<td>" + data.purlist[i].preco_unit + "</td>"
-                content += "<td>" + data.purlist[i].total + "</td>"
-                content += "<td>" + data.purlist[i].fornecedor_nome + "</td>"
-                content += "</tr>"
-            }                  
-            content += "</tbody></table>"
-            $('#' + data.q).append(content);        
-        })
 
+            for (var i = 0; i < data.purlist.length; i++) {
+                content += "<tr style='text-align:center'>"
+                content += "<td style='text-align:left; text-transform:capitalize;'>" + data.purlist[i].produto_nome + "</td>"
+                content += "<td style='text-transform:capitalize;'>" + data.purlist[i].descricao + "</td>"
+                content += "<td>" + data.purlist[i].quant.toFixed(2) + "</td>"
+                content += "<td>" + "$" + data.purlist[i].preco_unit.toFixed(2) + "</td>"
+                content += "<td>" + "$" + data.purlist[i].total.toFixed(2) + "</td>"
+                content += "<td style='text-transform:capitalize;'>" + data.purlist[i].fornecedor_nome + "</td>"
+                content += "</tr>"
+            }
+            content += "<tr style='text-align:center'><td colspan='6'>\
+                <form action='/items'><button class='btn btn-primary' name='idadditems' value=" + q +">Add Items</button></form>\
+                </td></tr></tbody></table></td></tr>"
+            /* source: https://stackoverflow.com/questions/14232815/how-to-insert-another-table-row-between-two-table-rows */
+            $(content).insertAfter($('#tr' + q));
+        })
     });
+
+    $('.hide').click(function () {
+            $(".dyntable").remove();
+    });
+
+/* ------------ CHARTS ------------ */
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var myChart;
+    var labelsTotal = [];
+    var labelsCat = [];
+    var colors = [
+        'rgba(255, 51, 51, 0.8)', 'rgba(255, 51, 255, 0.8)', 'rgba(153, 0, 38, 0.8)',
+        'rgba(255, 153, 51, 0.8)', '	rgba(115, 0, 153, 0.8)', 'rgba(153, 77, 0, 0.8)',
+        'rgba(102, 255, 51, 0.8)', 'rgba(102, 0, 51, 0.8)', 'rgba(51, 51, 204, 0.8)',
+        'rgba(51, 102, 255, 0.8)', 'rgba(255, 204, 255, 0.8)', 'rgba(102, 153, 153, 0.8)'
+        ];
+
+    var year = "{{ currentYear }}"
+
+    "{% for item in spendbymonth %}"
+        labelsTotal.push({'x': parseInt("{{ item['month'] }}"), 'y':"{{ item['total'] }}"}) 
+    "{% endfor %}"
+
+    "{% for item in purchasesbycat %}"
+        labelsCat.push({'x': "{{ item['descricao'] }}", 'y':parseInt("{{ item['total'] }}")}) 
+    "{% endfor %}"
+
+    function charts (value) {
+
+        var clegend = false;
+
+        if (value === "donut") {
+            var ctype = "doughnut"
+            clegend = true
+        }
+        else {
+            ctype = "bar"
+        }
+
+        if (myChart) {
+            myChart.destroy()
+        }
+        console.log(labelsCat)
+        myChart = new Chart(ctx, {
+            type: ctype,
+            data: {
+                labels: labelsCat.map(o => o.x),
+                datasets: [{
+                    data: labelsCat.map(o => o.y),
+                    backgroundColor: colors,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                elements:{
+                    bar: {
+                        borderWidth: 2,
+                    }
+                },
+                plugins:{
+                    legend: { 
+                        display: clegend
+                    },
+                    title: {
+                        display: true,
+                        text: year + ' Expenditure by Category'
+                    }
+                }
+            }
+        });
+    }
+
+    function yearlyChart() {
+
+        if (myChart) {
+            myChart.destroy()
+        }
+
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                    datasets: [{
+                    data: labelsTotal, 
+                    parsing:{
+                        yAxisKey: 'y'
+                    }, 
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)'},
+                    ]
+                },
+            options: {
+                indexAxis: 'x',
+                elements:{
+                    bar: {
+                        borderWidth: 2,
+                    }
+                },
+                plugins:{
+                    legend: { 
+                        display: false
+                    }
+  
+                },
+                responsive: true,
+
+            }
+    });}
+
+    $(document).ready(yearlyChart);
+
+    $('#yearchart').click(yearlyChart)
+    
+    $('.mychart').click(function()
+    {
+        var q = $(this).val();
+        charts(q)
+    })
+
+    $('#year').on('change', function()
+    {
+        var q = $(this).val();
+        $.getJSON($SCRIPT_ROOT + '/changeyear', 
+        {
+            query: q,
+        }, function (data)
+        {   
+            year = q
+            labelsTotal = []
+            labelsCat = []
+
+            for(i = 0; i < data.spendMonth.length; i++){
+                labelsTotal.push({'x': parseInt(data.spendMonth[i].month), 'y': data.spendMonth[i].total})
+            };
+
+            for(i = 0; i < data.spendCat.length; i++){
+                labelsCat.push({'x': data.spendCat[i].descricao, 'y': data.spendCat[i].total})
+            };
+            yearlyChart()
+
+        })
+    })
+
+/* ------------ CHARTS ------------ */
+
+
 
 </script>
 

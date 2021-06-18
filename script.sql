@@ -57,3 +57,4 @@ CREATE TABLE produto_categoria (
     FOREIGN KEY (id_categoria) REFERENCES categoria(id)
 );
 
+/* https://stackoverflow.com/questions/14565788/how-to-group-by-month-from-date-field-using-sql */
