@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Housing
 
 Mortgage or rent
@@ -113,4 +114,5 @@ Games
 Movies
 Concerts
 Vacations
+
 Subscriptions (Netflix, Amazon, Hulu, etc.)
