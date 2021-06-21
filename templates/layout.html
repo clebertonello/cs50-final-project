@@ -36,25 +36,12 @@
 
 
     <title>Budget Control: {% block title %}{% endblock %}</title>
-    <style>
-        .bd-placeholder-img {
-            font-size: 1.125rem;
-            text-anchor: middle;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            user-select: none;
-        }
 
-        @media (min-width: 768px) {
-            .bd-placeholder-img-lg {
-                font-size: 3.5rem;
-            }
-        }
-    </style>
 </head>
 
 <body>
-    <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap shadow fixed-top">
+    <header class="sticky-top shadow fixed-top">
+    <nav class="navbar navbar-dark navbar-expand-lg bg-dark flex-md-nowrap ">
         {% if session.user_id %}
         <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse"
             data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"
@@ -68,14 +55,15 @@
         </ul>
         {% else %}
         <ul class="navbar-nav px-3 ms-auto">
-            <li class="nav-item text-nowrap">
+            <li class="nav-item">
                 <a class="nav-link" href="/login">Log In</a>
             </li>
-            <li class="nav-item text-nowrap">
+            <li class="nav-item">
                 <a class="nav-link" href="/register">Register</a>
             </li>
         </ul>
         {% endif %}
+    </nav>
     </header>
     <div class="container-fluid">
         <div class="row">
@@ -85,7 +73,7 @@
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link text-start" aria-current="page" href="/"><i class="fas fa-home"></i>  Spending</a>
-                        </li>
+                        </li px-md-4>
                         <li class="nav-item">
                             <a class="nav-link text-start" href="/items"><i class="fas fa-shopping-cart"></i>  Items</a>
                         </li>
@@ -95,15 +83,16 @@
                     </ul>
                 </div>
             </nav>
+            
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4" style="padding-top: 10px;">
+            {% else %}
+            <main style="padding-top: 10px;">
             {% endif %}
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             {% if get_flashed_messages() %}
-                <header>
                     <div class="alert alert-primary alert-dismissible border text-center fade show" role="alert">
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         {{ get_flashed_messages() | join(" ") }}
                     </div>
-                </header>
             {% endif %}
                 {% block main %}{% endblock %}
             </main>

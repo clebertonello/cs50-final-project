@@ -357,23 +357,26 @@ def login():
         password = request.form.get('password')
 
         # Query database for username
-
         user = cur.execute("SELECT * FROM user WHERE username = (?)", (username,)).fetchone()
 
         # Ensure username exists and password is correct
         if user is None:
             error = 'Incorrect username.'
+            print(error)
+
         elif not check_password_hash(user['password'], password):
             error = 'Incorrect password.'
+            print(error)
 
         # Remember which user has logged in
         if error is None:
             session["user_id"] = user["id"]
+            return redirect("/")
         
         flash(error)
 
-        # Redirect user to home page
-        return redirect("/")
+        # Redirect user to login page
+        return render_template("login.html")
 
     # User reached route via GET (as by clicking a link or via redirect)
     else:
@@ -400,7 +403,7 @@ def register():
         error = None
 
         if request.form.get("password") != request.form.get("confirmation"):
-            error = "Passwords must be the same"
+            error = "Passwords don't match"
 
         username = request.form.get("username")
         password = request.form.get("password")
@@ -410,16 +413,17 @@ def register():
 
         # Ensure username do not exist yet
         if rows != None:
-            error = "username already exists"
+            error = "Username already exists"
 
-        # Query database for username
-        cur.execute("INSERT INTO user (username, password) VALUES (?, ?)", (username, generate_password_hash(password),))
-        db.commit()
+        if error is None:
+            cur.execute("INSERT INTO user (username, password) VALUES (?, ?)", (username, generate_password_hash(password),))
+            db.commit()
+            return redirect("/")
 
         flash(error)
 
-        # Redirect user to home page
-        return redirect("/")
+        # Redirect user to register page
+        return render_template("register.html")
 
     # User reached route via GET (as by clicking a link or via redirect)
     else:
