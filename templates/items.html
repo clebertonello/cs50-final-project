@@ -90,78 +90,123 @@
     </table>
 </div>
 </div>
-    <script>
-                
-        /* source= https://stackoverflow.com/questions/1801499/how-to-change-options-of-select-with-jquery */
 
-        $(function() {
-            $('#purchases').on('change', function() {
-                $.getJSON($SCRIPT_ROOT + '/fetchsubcat', {query_sub: $('select[name="purchases"]').val(),
-            }, function(data) {
-                var subcat_list = $.map(data.sublist, function(value, key) {return {label: value.descricao, value: value.id}});
-                
+<!-- EDIT ROW -->
+<tr><td colspan='4'><table>
+<tr style="display:none" class="table table-warning align-middle editform text-align:center">
+    <form action="/items" method="POST">
+        <td>
+            <input class="form-control" type="number" name="newId" placeholder="New ID (optional)">
+            <input type="hidden" class="form-control" id="oldid" name="oldId" type="number"></td>
+        <td>
+            <input class="form-control" type="text" name="newName" placeholder="New Name (optional)">
+        <td>
+            <select name="newCat" id="newCat" class="form-select">
+                <option disabled selected value="">New Category</option>
+                {% for item in categories %}
+                    <option value="{{ item['id'] }}">{{ item['descricao'].capitalize() }}</option>
+                {% endfor %}
+            </select>
+        </td>
+        <td>
+            <select name="newSub" id="newSub" class="form-select">
+                <option disabled selected value="">New Subcategory</option>
+            </select>
+        </td>
+        <td>
+            <button class="btn btn-primary" type="submit" name="postbutton" value="edit">Submit</button>
+        </td>
+    </form>
+</tr>
+</table>
+</td></tr>
 
-                $('#subcat').autocomplete({
-                    delay: 0,
-                    source: subcat_list,
-                    select: function(event, ui) {
-                        $('#subcat').val(ui.item.label)
-                        return false;
-                        }
-                    })
-                });
+
+<script>
+            
+    /* source= https://stackoverflow.com/questions/1801499/how-to-change-options-of-select-with-jquery */
+
+$(function() {
+        $('#purchases').on('change', function() {
+            $.getJSON($SCRIPT_ROOT + '/fetchsubcat', {query_sub: $('select[name="purchases"]').val(),
+        }, function(data) {
+            var subcat_list = $.map(data.sublist, function(value, key) {return {label: value.descricao, value: value.id}});
+            
+
+            $('#subcat').autocomplete({
+                delay: 0,
+                source: subcat_list,
+                select: function(event, ui) {
+                    $('#subcat').val(ui.item.label)
+                    return false;
+                    }
+                })
             });
         });
+    });
 
-        $('.edit').click(function () 
-        {
-            var q = $(this).val()
-            console.log(q)
+$('.edit').click(function () 
+{
+    var q = $(this).val();
+    var f = $('.editform');
 
-            $(".dyntable").remove();
-            var content = 
-                    "<tr class=' dyntable'><form action='/items' method='POST'>\
-                        <th scope='col' width='10%'><input class='form-control' type='text' name='newid' placeholder='New ID'></th>\
-                        <th scope='col' width='40%'><input class='form-control' type='text' name='newname' placeholder='New Name'></th>\
-                        <th scope='col' width='20%'><input class='form-control' type='text' name='newcat' placeholder='New Category'></th>\
-                        <th scope='col' width='20%'><input class='form-control' type='text' name='newsub' placeholder='New Subcategory'></th>\
-                        <th scope='col' width='10%'><button class='btn btn-primary' type='submit' name='postbutton' value='edit'>Submit</button></th>\
-                    </form></tr>";
-            $(content).insertAfter($('#tr' + q));
-        });
-        
-        $(document).ready(function() {
-            $.getJSON($SCRIPT_ROOT + '/fetchprod',function(data) {
-                var product_list = $.map(data.productlist, function(value, key) {return {label: value.produto_nome, value: value.id}});
-                var place_list = $.map(data.placelist, function(value, key) {return {label: value.fornecedor_nome, value: value.id}});
-                $('#product_name').autocomplete({
-                    delay: 0,
-                    source: product_list,
-                    select: function(event, ui) {
-                        $('#product_name').val(ui.item.label)
-                        return false;
-                    }
-                    })
-                $('#place').autocomplete({
-                    delay: 0,
-                    source: place_list,
-                    select: function(event, ui) {
-                        $('#place').val(ui.item.label)
-                        return false;
-                    }
-})
-            });
-        });  
-        
-        $(document).ready(function()
-        {
-            var q = parseInt("{{ addItems }}")
-            if(q)
-            {
-                console.log(q)
-                $('#purchases').val(q)
+    f.css("display", "table-row");
+    $("#oldid").val(q);
+    $(f).insertAfter("#tr" + q);
+});
+    
+$(document).ready(function() {
+    $.getJSON($SCRIPT_ROOT + '/fetchprod',function(data) {
+        var product_list = $.map(data.productlist, function(value, key) {return {label: value.produto_nome, value: value.id}});
+        var place_list = $.map(data.placelist, function(value, key) {return {label: value.fornecedor_nome, value: value.id}});
+        $('#product_name').autocomplete({
+            delay: 0,
+            source: product_list,
+            select: function(event, ui) {
+                $('#product_name').val(ui.item.label)
+                return false;
             }
+            })
+        $('#place').autocomplete({
+            delay: 0,
+            source: place_list,
+            select: function(event, ui) {
+                $('#place').val(ui.item.label)
+                return false;
+            }
+        })
+    });
+});  
+    
+$(document).ready(function()
+{
+    var q = parseInt("{{ addItems }}")
+    if(q)
+    {
+        $('#purchases').val(q)
+    }
+})
+
+var sublist = []
+
+"{% for item in subcategories %}"
+sublist.push({'id': parseInt("{{ item['id'] }}"), 'descricao':"{{ item['descricao'].capitalize() }}", 'parentId':parseInt("{{ item['parent_id'] }}")})
+"{% endfor %}"
+
+console.log(sublist)
+
+$('#newCat').change(function()
+{
+    $('#newSub option:not(:first)').remove()
+    var q = $(this).val()
+    
+    for(i = 0; i < sublist.length; i++)
+    {   
+        if (sublist[i].parentId == q)
+        {   
+            $('#newSub').append($('<option/>').val(sublist[i].id).text(sublist[i].descricao))
         }
-        )
-    </script>
+    }
+})
+</script>
 {% endblock %}

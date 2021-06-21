@@ -115,7 +115,7 @@
 
         
     <tr><td colspan='4'>
-    <table >
+    <table>
         <tr style="display:none" class="table table-warning align-middle catform text-align:center">
             <form action="/category" method="POST">
                 <td>
@@ -124,7 +124,6 @@
                 </td>
                 <td>
                     <input class="form-control inputcatdesc" type="text" name="newDescription" placeholder="New Description (optional)">
-                    <input type="hidden" class="form-control" id="olddescription" name="oldDescription" type="text"></td>
                 </td>
                 <td></td>
                 <td><button class="btn btn-primary" type="submit" name="postbutton" value="edit">Submit</button></td>
@@ -137,7 +136,6 @@
                     <input type="hidden" class="form-control" id="suboldid" name="oldId" type="number"></td>
                 <td>
                     <input class="form-control inputcatdesc" type="text" name="newDescription" placeholder="New Description (optional)">
-                    <input type="hidden" class="form-control" id="subolddescription" name="oldDescription" type="text"></td>
                 <td>
                     <select name="newParent" class="form-select">
                         <option disabled selected value=""> New Parent</option>
@@ -145,7 +143,6 @@
                             <option value="{{ item['id'] }}">{{ item['descricao'].capitalize() }}</option>
                         {% endfor %}
                     </select>
-                    <input type="hidden" class="form-control" id="suboldparent" name="oldParent" type="number">
                 <td>
                     <button class="btn btn-primary" type="submit" name="postbutton" value="edit">Submit</button>
                 </td>
@@ -182,14 +179,10 @@ $('.edit').click(function () {
 $('.subedit').click(function () {
     $(".catform").css("display", "none");
     var q = $(this).val();
-    var p = $("#tr" + q).find("#parentid").val();
-    var d = $("#tr" + q).find("#description").val();
     var f = $('.subform');
 
     f.css("display", "table-row");
     $("#suboldid").val(q);
-    $("#suboldparent").val(p);
-    $("#subolddescription").val(d);
     $(f).insertAfter("#tr" + q);
 });
 /* ################### */

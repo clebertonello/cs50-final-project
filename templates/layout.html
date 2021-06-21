@@ -97,19 +97,17 @@
             </nav>
             {% endif %}
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            {% if get_flashed_messages() %}
+                <header>
+                    <div class="alert alert-primary alert-dismissible border text-center fade show" role="alert">
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        {{ get_flashed_messages() | join(" ") }}
+                    </div>
+                </header>
+            {% endif %}
                 {% block main %}{% endblock %}
             </main>
         </div>
     </div>
-
-    <!--{% if get_flashed_messages() %}
-            <header>
-                <div class="alert alert-primary alert-dismissible border text-center fade show" role="alert">
-                <!-- https://stackoverflow.com/questions/43560532/showing-flash-messages-in-django-with-close-button
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    {{ get_flashed_messages() | join(" ") }}
-                </div>
-            </header>
-        {% endif %} -->
 </body>
 </html>

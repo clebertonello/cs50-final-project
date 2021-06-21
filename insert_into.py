@@ -57,7 +57,7 @@ compras= [
 ]
 
 itemList = cur.execute(
-    "SELECT produto.id, produto.produto_nome, c.descricao AS category, categoria.descricao AS subcategory FROM produto " \
+    "SELECT produto.id, produto.produto_nome, c.descricao AS category, categoria.parent_id, categoria.id AS categoriaid, categoria.descricao AS subcategory FROM produto " \
         "INNER JOIN produto_categoria ON produto.id=produto_categoria.id_produto " \
             "INNER JOIN categoria ON produto_categoria.id_categoria=categoria.id "\
                 "INNER JOIN (SELECT id, descricao FROM categoria WHERE parent_id IS NULL) c ON categoria.parent_id=c.id " \

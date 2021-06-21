@@ -140,6 +140,8 @@ def items():
     """add product to database"""
     addItems = request.args.get("idadditems")
     shopping_list = cur.execute("SELECT id FROM compras ORDER BY data DESC").fetchall()
+    categories = cur.execute("SELECT * FROM categoria WHERE parent_id IS NULL").fetchall()
+    subcategories = cur.execute("SELECT * FROM categoria WHERE parent_id IS NOT NULL").fetchall()
     buttonValue = request.form.get('postbutton')
 
     itemList = cur.execute(
@@ -153,9 +155,35 @@ def items():
     if request.method == "POST":
         if buttonValue == "edit":
             print("edit")
+            newId = request.form.get('newId')
+            oldId = request.form.get('oldId')
+            newName = request.form.get('newName').lower()
+            newSub = request.form.get('newSub')
+
+            if newName != '':
+                cur.execute("UPDATE produto SET produto_nome = ? WHERE id = ?", (newName, oldId))
+
+            if newId != '':
+                cur.execute("UPDATE produto SET id = ? WHERE id = ?", (newId, oldId))
+                cur.execute("UPDATE produto_categoria SET id_produto = ? WHERE id_produto = ?", (newId, oldId))
+                cur.execute("UPDATE compra_produto SET produto_id = ? WHERE produto_id = ?", (newId, oldId))
+
+            if newSub is not None:
+                cur.execute("UPDATE produto_categoria SET id_categoria = ? WHERE id_produto = ?", (newSub, newId))
+
+            db.commit()
+
+            flash("Item Edited")
 
         elif buttonValue == "remove":
-            print("remove")
+            itemId = request.form.get('id')
+            cur.execute("DELETE FROM produto WHERE id = ?", (itemId,))
+            cur.execute("DELETE FROM produto_categoria WHERE id_produto = ?", (itemId,))
+            cur.execute("DELETE FROM compra_produto WHERE produto_id = ?", (itemId,))
+            
+            db.commit()
+            
+            flash("Item Removed")
 
         else:
             purchases_id = request.form.get("purchases")
@@ -164,10 +192,9 @@ def items():
             quantity = request.form.get("quantity")
             place = request.form.get("place").lower()
             unit_price = request.form.get("unit_price")
-
             catId = cur.execute("SELECT categoria_id FROM compras WHERE id = ?", (purchases_id,)).fetchone()[0]
             productId = cur.execute("SELECT id FROM produto WHERE produto_nome = ?", (product_name,)).fetchone()
-            subcatId = cur.execute("SELECT id FROM categoria WHERE descricao = ?", (subcategory,)).fetchone()
+            subcatId = cur.execute("SELECT id FROM categoria WHERE descricao = ? AND parent_id IS NOT NULL", (subcategory,)).fetchone()
             placeId = cur.execute("SELECT id FROM fornecedor WHERE fornecedor_nome = ?", (place,)).fetchone()
 
             if subcatId is None:
@@ -217,7 +244,7 @@ def items():
 
     else:
 
-        return render_template("items.html", shopping_list=shopping_list, addItems=addItems, itemList=itemList)
+        return render_template("items.html", shopping_list=shopping_list, addItems=addItems, itemList=itemList, subcategories=subcategories, categories=categories)
 
 
 @app.route("/fetchsubcat")
@@ -280,37 +307,29 @@ def category():
         button = request.form.get("postbutton")
 
         if button == "remove":
-            category_id = request.form.get("id")
-            cur.execute("DELETE FROM categoria WHERE id = ?", (category_id,))
-            cur.execute("DELETE FROM categoria WHERE parent_id = ?", (category_id,))
+            catId = request.form.get("id")
+            cur.execute("DELETE FROM categoria WHERE id = ?", (catId,))
+            cur.execute("DELETE FROM categoria WHERE parent_id = ?", (catId,))
 
-            flash("Removed")
+            flash("Category Removed")
 
         elif button == "edit":
             oldId = request.form.get("oldId")
-            oldParent = request.form.get("oldParent")
-            oldDescription = request.form.get("oldDescription")
             newId = request.form.get("newId")
             newDescription = request.form.get("newDescription").lower()
             newParent = request.form.get("newParent")
 
-            if newId == '':
-                newId = oldId
+            if newDescription != '':
+                cur.execute("UPDATE categoria SET descricao = ? WHERE id = ?", (newDescription, oldId))
 
-            if newDescription == '':
-                newDescription = oldDescription
-
-            if newParent is None and oldParent is not None:
-                newParent = oldParent
+            if newParent is not None:
+                cur.execute("UPDATE categoria SET parent_id = ? WHERE id = ?", (newParent, oldId))
             
-            cur.execute("UPDATE categoria SET id = ?, descricao = ?, parent_id = ? WHERE id = ?", (newId, newDescription, newParent, oldId))
-            
-            if newParent is None:
-                cur.execute("UPDATE categoria SET parent_id = ? WHERE parent_id = ?", (newId, oldId))
-            
-            cur.execute("UPDATE produto_categoria SET id_categoria = ? WHERE id_categoria = ?", (newId, oldId))
-
-            flash("Edited")
+            if newId != '':
+                cur.execute("UPDATE categoria SET id = ? WHERE id = ?", (newId, oldId))
+                cur.execute("UPDATE produto_categoria SET id_categoria = ? WHERE id_categoria = ?", (newId, oldId))
+                
+            flash("Category Edited")
         else:
             catId = request.form.get("categoryId")
             catDesc = request.form.get("catDesc")
@@ -318,7 +337,7 @@ def category():
 
             cur.execute("INSERT INTO categoria (id, descricao, parent_id) VALUES (?, ?, ?)", (catId, catDesc, catParent))
 
-            flash("Added")
+            flash("Category Added")
 
         db.commit()
 
