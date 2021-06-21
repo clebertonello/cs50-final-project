@@ -65,6 +65,12 @@
         {% endif %}
     </nav>
     </header>
+    {% if get_flashed_messages() %}
+    <div class="alert alert-primary alert-dismissible border text-center fade show" role="alert">
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        {{ get_flashed_messages() | join(" ") }}
+    </div>
+{% endif %}
     <div class="container-fluid">
         <div class="row">
             {% if session.user_id %}
@@ -88,12 +94,7 @@
             {% else %}
             <main style="padding-top: 10px;">
             {% endif %}
-            {% if get_flashed_messages() %}
-                    <div class="alert alert-primary alert-dismissible border text-center fade show" role="alert">
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        {{ get_flashed_messages() | join(" ") }}
-                    </div>
-            {% endif %}
+
                 {% block main %}{% endblock %}
             </main>
         </div>
