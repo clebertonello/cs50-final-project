@@ -1,16 +1,12 @@
-import os
-
 import sqlite3
 from flask import Flask, flash, redirect, render_template, request, session, jsonify
 from flask_session import Session
 from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
 from werkzeug.security import check_password_hash, generate_password_hash
-import pandas_datareader.data as wd
 from datetime import date
-import json
 
-from helpers import apology, login_required, lookup, usd
+from helpers import apology, login_required, usd
 
 # Configure application
 app = Flask(__name__)
@@ -67,9 +63,7 @@ def index():
                 "GROUP BY strftime('%m', compras.data) ORDER BY compras.data", (user_id, currentYear)
         ).fetchall()
 
-
     pbc = [dict(item) for item in purchasesbycat]
-
 
     category = cur.execute("SELECT id, descricao FROM categoria WHERE parent_id IS NULL").fetchall()
     
