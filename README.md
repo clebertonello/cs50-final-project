@@ -40,4 +40,4 @@
 ##### Database stores users, items (produtos), categories (catgoria), items categories (produto_categoria), places (fornecedor), item bought (compra_produto) and spending (compras). For more information check script.sql.
 
 ### Plans:
-##### My original plan for this web application was to make something similar to Excel's pivot tables and Power BI. There was always a nice idea to implement, but I decided to stop in current stage to submit it, otherwise who knows how long would I be implementing news features.
+##### My original plan for this web application was to make something similar to Excel's pivot tables and Power BI full of filters, but then it started to take too long. So I decided to stop in current stage (since its main features are in place) to submit it. 
