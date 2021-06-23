@@ -121,8 +121,6 @@ def changeyear():
 
     spendMonth = [dict(item) for item in spendbymonth]
     spendCat = [dict(item) for item in purchasesbycat]
-    print(spendMonth)
-    print(spendCat)
 
     return jsonify(spendMonth=spendMonth, spendCat=spendCat)
 
