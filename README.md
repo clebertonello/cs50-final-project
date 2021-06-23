@@ -21,6 +21,7 @@
 ###### 2 - Edit form. Previously I was creating this form after the document was ready but I was unable to submit for reasons I dont fully understand yet. So generetad the form with the original document but with style="display:none". The edit button changes the display status to table-row and insert the form after the selected object via JQuery.
 ###### 3 - Subcategory Form. I did this as I did the edit form.
 
-###### For the charts in the dashboard I used Chartjs. 
+##### For the charts in the dashboard I used Chartjs. 
 
-###### In the add items form of items.html I was using several select, but I decided to change that to an input type text so the user has more freedom. If you insert a new item that is not previously registered in the database, back-end will automaticaly register it for the user, adding new ID to it. The same apllies to subcategory
+##### In the add items' form of items.html I was using several select, but I decided to change that to an input type text so the user has more freedom. If you insert a new item that is not previously registered in the database, back-end will automaticaly register it for the user, adding new ID to it. The same apllies to subcategory.
+
