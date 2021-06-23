@@ -12,15 +12,15 @@
     <h1 class="h3 mb-3 fw-normal">Register</h1>
     <form action="/register" method="post">
         <div class="form-floating">
-            <input autocomplete="off" autofocus class="form-control" name="username" type="text" required id="floatingInput">
+            <input autocomplete="off" autofocus class="form-control" name="username" type="text" autocomplete="off" required id="floatingInput">
             <label for="floatingInput">Username</label>
         </div>
         <div class="form-floating">
-            <input class="form-control" name="password" type="password" required id="floatingPassword">
+            <input class="form-control" name="password" type="password" autocomplete="off" required id="floatingPassword">
             <label for="floatingPassword">Password</label>
         </div>
         <div class="form-floating">
-            <input class="form-control" name="confirmation" type="password" required id="floatingPasswordC">
+            <input class="form-control" name="confirmation" type="password" autocomplete="off" required id="floatingPasswordC">
             <label for="floatingPasswordC">Confirm Password</label>
         </div>
         <div style="padding:10px" id="passwordCheck"></div>

@@ -70,7 +70,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         {{ get_flashed_messages() | join(" ") }}
     </div>
-{% endif %}
+    {% endif %}
     <div class="container-fluid">
         <div class="row">
             {% if session.user_id %}

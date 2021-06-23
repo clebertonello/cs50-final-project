@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block title %}
-Purchases
+Spending
 {% endblock %}
 
 {% block main %}
@@ -119,8 +119,7 @@ Purchases
         $.getJSON($SCRIPT_ROOT + '/fetchpur', {
             query: q,
         }, function (data) {
-            $(".dyntable").remove();
-            var content = "<tr class='table-secondary dyntable'><td colspan='6'><table style='padding: 15px' class='table align-middle'>\
+            var content = "<tr class='table-secondary dyntable' id='" + q + "'><td colspan='6'><table style='padding: 15px' class='table align-middle'>\
                 <thead>\
                     <tr style='text-align:center'>\
                         <th scope='col' width='30%'>Item</th>\
@@ -151,8 +150,13 @@ Purchases
         })
     });
 
-    $('.hide').click(function () {
+/*     $('.hide').click(function () {
             $(".dyntable").remove();
+    }); */
+
+    $('.hide').click(function () {
+        var q = $(this).val()
+        $("#" + q).css('display', 'none');
     });
 
 /* ------------ CHARTS ------------ */
